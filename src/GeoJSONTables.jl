@@ -1,12 +1,15 @@
 module GeoJSONTables
 
 import JSON3, Tables, GeoInterface
+using GeometryBasics
+using GeometryBasics.StructArrays
+
 
 struct FeatureCollection{T} <: AbstractVector{eltype(T)}
     json::T
 end
 
-function read(source)
+function read(source, old = false)
     fc = JSON3.read(source)
     features = get(fc, :features, nothing)
     if get(fc, :type, nothing) == "FeatureCollection" && features isa JSON3.Array
@@ -82,6 +85,6 @@ end
 Base.show(io::IO, ::MIME"text/plain", fc::FeatureCollection) = show(io, fc)
 Base.show(io::IO, ::MIME"text/plain", f::Feature) = show(io, f)
 
-include("geointerface.jl")
-
+# include("geointerface.jl")
+include("basics.jl")
 end # module
