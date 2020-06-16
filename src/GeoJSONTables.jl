@@ -9,14 +9,23 @@ struct FeatureCollection{T} <: AbstractVector{eltype(T)}
     json::T
 end
 
-function read(source, old = false)
+function read(source, master_way = false)
+    geom = []
     fc = JSON3.read(source)
-    features = get(fc, :features, nothing)
-    if get(fc, :type, nothing) == "FeatureCollection" && features isa JSON3.Array
-        FeatureCollection{typeof(features)}(features)
-    else
-        throw(ArgumentError("input source is not a GeoJSON FeatureCollection"))
-    end
+        features = get(fc, :features, nothing)
+        if get(fc, :type, nothing) == "FeatureCollection" && features isa JSON3.Array
+            if master_way
+                FeatureCollection{typeof(features)}(features)
+            else
+                for feat in features
+                    push!(geom, basicgeometry(feat))
+                end
+                structarray(geom)
+            end
+        else
+            throw(ArgumentError("input source is not a GeoJSON FeatureCollection"))
+        end
+    
 end
 
 Tables.istable(::Type{<:FeatureCollection}) = true

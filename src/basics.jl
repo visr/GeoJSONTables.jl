@@ -1,6 +1,6 @@
-function basicgeometry(f::GeoJSONTables.Feature)
-    geom = geometry(f)
-    prop = properties(f)
+function basicgeometry(f::JSON3.Object)
+    geom = f.geometry
+    prop = f.properties
     return basicgeometry(geom, prop)
 end
 
@@ -9,7 +9,6 @@ function basicgeometry(geom::JSON3.Object, prop::JSON3.Object)
     k = keys(prop)
     v = values(prop)
     tup = (; zip(k, v)...)
-    println(tup)
     if t == "Point"
         return basicgeometry(Point, geom.coordinates, tup)
     elseif t == "LineString"
@@ -39,8 +38,7 @@ function basicgeometry(::Type{Point}, g::JSON3.Array)
 end
 
 function basicgeometry(::Type{LineString} , g::JSON3.Array, tup::NamedTuple)
-    ls = LineString([Point{2, Float64}(p) for p in g], 1)
-    return Meta(ls, tup)
+    return LineStringMeta(LineString([Point{2, Float64}(p) for p in g], 1), tup)
 end
 
 function basicgeometry(::Type{LineString} , g::JSON3.Array)
@@ -90,13 +88,20 @@ end
 
 function basicgeometry(::Type{MultiPolygon}, g::JSON3.Array, tup::NamedTuple)
     poly = [basicgeometry(Polygon, x) for x in g]
-    return MultiPolygon(poly; tup...)
+    return MultiPolygonMeta(poly; tup...)
 end
 
 function basicgeometry(::Type{FeatureCollection}, g::JSON3.Array, tup::NamedTuple)
     #todo workout a way to represent metadata in this case
     return [basicgeometry(geom) for geom in g] 
 end
+
+function structarray(geom)
+    meta = collect(GeometryBasics.meta(s) for s in geom)
+    meta_cols = Tables.columntable(meta)
+    return StructArray(Geometry = collect(GeometryBasics.metafree(i) for  i in geom); meta_cols...)
+end
+
 
 # @btime GeoJSONTables.read($bytes_ne_10m_land)
 # # 53.805 ms (17 allocations: 800 bytes)
