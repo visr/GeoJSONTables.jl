@@ -1,14 +1,17 @@
-function basicgeometry(f::JSON3.Object)
-    geom = f.geometry
-    prop = f.properties
-    return basicgeometry(geom, prop)
+function basicgeometry(fc::GeoJSONTables.FeatureCollection)
+    geom = [basicgeometry(feat) for feat in fc]
+    structarray(geom)
 end
 
-function basicgeometry(geom::JSON3.Object, prop::JSON3.Object)
+    
+function basicgeometry(f::GeoJSONTables.Feature)
+    geom = geometry(f)
+    prop = properties(f)
+    
     t = geom.type
-    k = keys(prop)
-    v = values(prop)
-    tup = (; zip(k, v)...)
+    k = Tuple(keys(prop))
+    v = Tuple(values(prop))
+    tup = NamedTuple{k}(v)
     if t == "Point"
         return basicgeometry(Point, geom.coordinates, tup)
     elseif t == "LineString"
