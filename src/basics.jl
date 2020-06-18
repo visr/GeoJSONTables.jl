@@ -2,8 +2,7 @@ function basicgeometry(fc::GeoJSONTables.FeatureCollection)
     geom = [basicgeometry(feat) for feat in fc]
     structarray(geom)
 end
-
-    
+ 
 function basicgeometry(f::GeoJSONTables.Feature)
     geom = geometry(f)
     prop = properties(f)
@@ -12,7 +11,9 @@ function basicgeometry(f::GeoJSONTables.Feature)
     k = Tuple(keys(prop))
     v = Tuple(values(prop))
     tup = NamedTuple{k}(v)
+    
     if t == "Point"
+        # geom.coordinates = pt(a)
         return basicgeometry(Point, geom.coordinates, tup)
     elseif t == "LineString"
         return basicgeometry(LineString, geom.coordinates, tup)
@@ -31,41 +32,52 @@ function basicgeometry(f::GeoJSONTables.Feature)
     end
 end
 
-function basicgeometry(::Type{Point}, g::JSON3.Array, tup::NamedTuple)
+function basicgeometry(::Type{Point}, g, tup::NamedTuple)
     pt = Point{2, Float64}(g)
     return GeometryBasics.Meta(pt, tup)
 end
 
-function basicgeometry(::Type{Point}, g::JSON3.Array)
+function basicgeometry(::Type{Point}, g)
     return Point{2, Float64}(g)
 end
 
-function basicgeometry(::Type{LineString} , g::JSON3.Array, tup::NamedTuple)
-    return LineStringMeta(LineString([Point{2, Float64}(p) for p in g], 1), tup)
+function basicgeometry(::Type{LineString} , g, tup::NamedTuple)
+    coord = Point{2, Float64}[]
+    for i in 1:length(g)
+        push!(coord,collect(pts for pts in g[1]))
+    end
+    
+    return LineStringMeta(LineString([Point{2, Float64}(p) for p in coord], 1), tup)
 end
 
-function basicgeometry(::Type{LineString} , g::JSON3.Array)
+function basicgeometry(::Type{LineString} , g)
     return LineString([Point{2, Float64}(p) for p in g], 1)
 end
 
-function basicgeometry(::Type{Polygon}, g::JSON3.Array, tup::NamedTuple)
+function basicgeometry(::Type{Polygon}, g, tup::NamedTuple)
+    coord = Array{Point{2, Float64}}[]
+    for i in 1:length(g)
+        push!(coord,collect(pts for pts in g[1]))
+    end
     # TODO introduce LinearRing type in GeometryBasics?
-    nring = length(g)
-    exterior = LineString([Point{2, Float64}(p) for p in g[1]], 1)
+    nring = length(coord)
+    exterior = LineString([Point{2, Float64}(p) for p in coord[1]], 1)
     if nring == 1  # only exterior
         poly =  Polygon(exterior)
         return PolygonMeta(poly, tup)
     else  # exterior and interior(s)
         interiors = Vector{typeof(exterior)}(undef, nring)
         for i in 2:nring
-            interiors[i-1] = LineString([Point{2, Float64}(p) for p in g[i]], 1)
+            interiors[i-1] = LineString([Point{2, Float64}(p) for p in coord[i]], 1)
         end
         poly =  Polygon(exterior, interiors)
         return PolygonMeta(poly, tup)
     end
 end
-
-function basicgeometry(::Type{Polygon}, g::JSON3.Array)
+"""
+will receive stuff from MultiPolygon
+"""
+function basicgeometry(::Type{Polygon}, g)
     # TODO introduce LinearRing type in GeometryBasics?
     nring = length(g)
     exterior = LineString([Point{2, Float64}(p) for p in g[1]], 1)
@@ -81,20 +93,34 @@ function basicgeometry(::Type{Polygon}, g::JSON3.Array)
 end
 
 
-function basicgeometry(::Type{MultiPoint}, g::JSON3.Array, tup::NamedTuple)
-    return MultiPointMeta([basicgeometry(Point, x) for x in g], tup)
+function basicgeometry(::Type{MultiPoint}, g, tup::NamedTuple)
+    coord = Point{2, Float64}[]
+    for i in 1:length(g)
+        push!(coord,collect(pts for pts in g[1]))
+    end
+    
+    return MultiPointMeta([basicgeometry(Point, x) for x in coord], tup)
 end
 
-function basicgeometry(::Type{MultiLineString}, g::JSON3.Array, tup::NamedTuple)
-    return MultiLineStringMeta([basicgeometry(LineString, x) for x in g], tup)
+function basicgeometry(::Type{MultiLineString}, g, tup::NamedTuple)
+    coord = Array{Point{2, Float64}}[]
+    for i in 1:length(g)
+        push!(coord,collect(pts for pts in g[1]))
+    end
+    
+    return MultiLineStringMeta([basicgeometry(LineString, x) for x in coord], tup)
 end
 
-function basicgeometry(::Type{MultiPolygon}, g::JSON3.Array, tup::NamedTuple)
-    poly = [basicgeometry(Polygon, x) for x in g]
+function basicgeometry(::Type{MultiPolygon}, g, tup::NamedTuple)
+    coord = Array{Array{Point{2, Float64}}}[]
+    for i in 1:length(g)
+        push!(coord,collect(pts for pts in g[1]))
+    end
+    poly = [basicgeometry(Polygon, x) for x in coord]
     return MultiPolygonMeta(poly; tup...)
 end
 
-function basicgeometry(::Type{FeatureCollection}, g::JSON3.Array, tup::NamedTuple)
+function basicgeometry(::Type{FeatureCollection}, g, tup::NamedTuple)
     #todo workout a way to represent metadata in this case
     return [basicgeometry(geom) for geom in g] 
 end

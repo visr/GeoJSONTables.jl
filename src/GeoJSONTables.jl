@@ -9,7 +9,7 @@ end
 
 function read(source, master_way = false)
     fc = JSON3.read(source)
-        features = get(fc, :features, nothing)
+    features = get(fc, :features, nothing)
         if get(fc, :type, nothing) == "FeatureCollection" && features isa JSON3.Array
                 FeatureCollection{typeof(features)}(features)
         else
