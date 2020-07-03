@@ -1,6 +1,5 @@
 using GeoJSONTables
 using JSON3
-import GeoInterface
 using Tables
 using Test
 
@@ -49,29 +48,5 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
         @test GeoJSONTables.geometry(f1).coordinates[1][1][2] == [-117.907767,33.967747]
         @test GeoJSONTables.geometry(f1).coordinates[1][1][3] == [-117.912919,33.96445]
         @test GeoJSONTables.geometry(f1).coordinates[1][1][4] == [-117.913883,33.96657]
-
-        @testset "GeoInterface" begin
-            @test GeoInterface.geotype(t) === :FeatureCollection
-            @test GeoInterface.geotype(f1) === :Feature
-            gi_mp = GeoInterface.geometry(f1)
-            @test gi_mp isa GeoInterface.MultiPolygon
-            @test GeoInterface.geotype(gi_mp) === :MultiPolygon
-            properties = GeoInterface.properties(f1)
-            @test properties isa Dict{String, Any}
-            @test properties["addr2"] === "Rowland Heights"
-            @test_throws MethodError GeoInterface.bbox(t)
-            @test GeoInterface.bbox(f1) === nothing
-            coordinates = GeoInterface.coordinates(f1)
-            @test coordinates == Vector{Vector{Vector{Float64}}}[[[
-                [-117.913883, 33.96657],
-                [-117.907767, 33.967747],
-                [-117.912919, 33.96445],
-                [-117.913883, 33.96657],
-            ]]]
-            gi_f = GeoInterface.Feature(f1)
-            @test gi_f isa GeoInterface.Feature
-            gi_fc = GeoInterface.FeatureCollection(t)
-            @test gi_fc isa GeoInterface.FeatureCollection
-        end
     end
 end
