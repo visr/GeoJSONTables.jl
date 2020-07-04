@@ -18,7 +18,9 @@ function read(source)
     jsonfeatures = get(fc, :features, nothing)
     if get(fc, :type, nothing) == "FeatureCollection" && jsonfeatures isa JSON3.Array
         # TODO fill empty NamedTuple with properties
-        features = [Feature(geometry(f.geometry), NamedTuple()) for f in jsonfeatures]
+        features = [Feature(geometry(f.geometry),
+                    (; zip(keys(f.properties), values(f.properties))...))
+                    for f in jsonfeatures]
         FeatureCollection(features)
     else
         throw(ArgumentError("input source is not a GeoJSON FeatureCollection"))
