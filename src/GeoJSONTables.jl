@@ -2,17 +2,14 @@ module GeoJSONTables
 
 import JSON3, Tables
 using GeometryBasics
-# using GeometryBasics.StructArrays
+using GeometryBasics.StructArrays
 
 struct Feature{T, Names, Types}
     geometry::T
     properties::NamedTuple{Names, Types}
 end
 
-# TODO use a StructArray here instead
-struct FeatureCollection
-    features::Vector{<:Feature}
-end
+Feature(x; kwargs...) = Feature(x, values(kwargs))
 
 function read(source)
     fc = JSON3.read(source)
@@ -21,33 +18,38 @@ function read(source)
         features = [Feature(geometry(f.geometry),
                     (; zip(keys(f.properties), values(f.properties))...))
                     for f in jsonfeatures]
-        FeatureCollection(features)
+        iter = (i for i in features)
+        maketable(iter)
     else
         throw(ArgumentError("input source is not a GeoJSON FeatureCollection"))
     end
 end
 
-Tables.istable(::Type{<:FeatureCollection}) = true
-Tables.rowaccess(::Type{<:FeatureCollection}) = true
-Tables.rows(fc::FeatureCollection) = fc
+getnamestypes(::Type{Feature{T, Names, Types}}) where {T, Names, Types} = (T, Names, Types)
 
-Base.IteratorSize(::Type{<:FeatureCollection}) = Base.HasLength()
-Base.length(fc::FeatureCollection) = length(features(fc))
-Base.IteratorEltype(::Type{<:FeatureCollection}) = Base.HasEltype()
+function StructArrays.staticschema(::Type{F}) where {F<:Feature}
+    T, names, types = getnamestypes(F)
+    NamedTuple{(:geometry, names...), Base.tuple_type_cons(T, types)}
+end
 
-# read only AbstractVector
-Base.size(fc::FeatureCollection) = size(features(fc))
-Base.getindex(fc::FeatureCollection, i) = features(fc)[i]
-Base.IndexStyle(::Type{<:FeatureCollection}) = IndexLinear()
+ function StructArrays.createinstance(::Type{F}, x, args...) where {F<:Feature}
+     T , names, types = getnamestypes(F)
+     Feature(x, NamedTuple{names, types}(args))
+ end
+
+maketable(iter) = maketable(Tables.columntable(iter)::NamedTuple)
+maketable(cols::NamedTuple) = maketable(first(cols), Base.tail(cols)) # you could also compute the types here with `Base.tuple_type_tail` and `Base.tuple_type_head`
+
+function maketable(geometry, properties::NamedTuple{names, types}) where {names, types}
+    F = Feature{eltype(geometry), names, StructArrays.eltypes(types)}
+    return StructArray{F}(; geometry=geometry, properties...)
+end
 
 miss(x) = ifelse(x === nothing, missing, x)
 
 # these features always have type="Feature", so exclude that
 # the keys in properties are added here for direct access
-Base.propertynames(f::Feature) = keys(properties(f))
-
-"Get the FeatureCollection's features as a vector"
-features(f::FeatureCollection) = getfield(f, :features)
+Base.propertynames(f::Feature) = (:geometry, keys(properties(f))...)
 
 "Get the feature's geometry as a GeometryBasics geometry type"
 geometry(f::Feature) = getfield(f, :geometry)
@@ -62,32 +64,12 @@ Returns missing for null/nothing or not present, to work nicely with
 properties that are not defined for every feature. If it is a table,
 it should in some sense be defined.
 """
-function Base.getproperty(f::Feature, nm::Symbol)
-    props = properties(f)
-    val = get(props, nm, missing)
-    miss(val)
-end
+Base.getproperty(f::Feature, s::Symbol) = s == :geometry ? getfield(f, 1) : getproperty(getfield(f, 2), s)
 
-@inline function Base.iterate(fc::FeatureCollection)
-    st = iterate(features(fc))
-    st === nothing && return nothing
-    val, state = st
-    return val, state
-end
-
-@inline function Base.iterate(fc::FeatureCollection, st)
-    st = iterate(features(fc), st)
-    st === nothing && return nothing
-    val, state = st
-    return val, state
-end
-
-Base.show(io::IO, fc::FeatureCollection) = println(io, "FeatureCollection with $(length(fc)) Features")
 function Base.show(io::IO, f::Feature)
     geomtype = nameof(typeof(geometry(f)))
     println(io, "Feature with geometry type $geomtype and properties $(propertynames(f))")
 end
-Base.show(io::IO, ::MIME"text/plain", fc::FeatureCollection) = show(io, fc)
 Base.show(io::IO, ::MIME"text/plain", f::Feature) = show(io, f)
 
 """
@@ -153,7 +135,4 @@ end
 function geometry(::Type{MultiPolygon}, g::JSON3.Array)
     return MultiPolygon([geometry(Polygon, x) for x in g])
 end
-
-include("SA_test.jl")
-
 end # module
