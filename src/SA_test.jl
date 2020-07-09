@@ -13,11 +13,6 @@ function StructArrays.staticschema(::Type{F}) where {F<:Feature}
     NamedTuple{(:geometry, names...), Base.tuple_type_cons(T, types)}
 end
 
-function StructArrays.createinstance(::Type{F}, x, args...) where {F<:Feature}
-    T , names, types = getnamestypes(F)
-    Feature(x, NamedTuple{names, types}(args))
-end
-
 Base.propertynames(f::Feature) = (:geometry, keys(properties(f))...)
 Base.getproperty(f::Feature, s::Symbol) = s == :geometry ? getfield(f, 1) : getproperty(getfield(f, 2), s) # looking for `s` in `properties`
 
