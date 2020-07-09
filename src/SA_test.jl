@@ -6,19 +6,9 @@ p2 = Point(3, 2)
 
 Feature(x; kwargs...) = Feature(x, values(kwargs))
 
-Base.getproperty(x::Feature, s::Symbol) = s == :geometry ? getfield(x, 1) : getproperty(getfield(x, 2), s) # looking for `s` in `properties`
-
 getnamestypes(::Type{Feature{T, Names, Types}}) where {T, Names, Types} = (T, Names, Types)
 
 function StructArrays.staticschema(::Type{F}) where {F<:Feature}
-#=
-    the problem currently is the type of F we're getting here (uncommenting the println(F))
-    For homogeneous data "GeoJSONTables.Feature{GeometryBasics.Point{2,Int64},(:a, :b),Tuple{String,Int64}}" comes out
-    While for heterogeneous data Feature{T,(:a, :b),Tuple{String,Int64}} where T or Feature{T,(:a, :b),Types} where Types where T
-    So basically we're getting T/Types instead of concrete types depending on whateve is heterogeneous
-    with a no method matching getnametypes() error
-=#
-    # println(F)
     T, names, types = getnamestypes(F)
     NamedTuple{(:geometry, names...), Base.tuple_type_cons(T, types)}
 end
@@ -28,12 +18,19 @@ function StructArrays.createinstance(::Type{F}, x, args...) where {F<:Feature}
     Feature(x, NamedTuple{names, types}(args))
 end
 
-s = [Feature(Point(1, 2), a="1", b=2),  Feature(Point(3, 2), a="2", b=4)] #homogeneous data
+Base.propertynames(f::Feature) = (:geometry, keys(properties(f))...)
+Base.getproperty(f::Feature, s::Symbol) = s == :geometry ? getfield(f, 1) : getproperty(getfield(f, 2), s) # looking for `s` in `properties`
 
-#other examples
-# s = [Feature(Point(1, 2), a="1", b=2),  Feature(Point(3.0, 2), a="2", b=4)] # point heterogeneous
-# s = [Feature(Point(1, 2), a="1", b=2),  Feature(Point(3, 2), a="2", b=4.0)] # meta heterogeneous
-# s = [Feature(Point(1, 2), a="1", b=2),  Feature(Point(3, 2), a="2", b=4.0) , Feature(MultiPoint([p1, p2]), a = "5", b = 6.0)]
+s = [Feature(Point(1, 2), a="1", b=2), Feature(Point(3.0, 2), a="2", b=4.0) , Feature(MultiPoint([p1, p2]), a = "5", b = 6.0)]
+iter = (i for  i in s)
 
-sa = StructArray(s)
-# println(sa)
+maketable(iter) = maketable(Tables.columntable(iter)::NamedTuple)
+
+# assuming `geometry` is first in `propertynames(f::Feature)`
+maketable(cols::NamedTuple) = maketable(first(cols), Base.tail(cols)) # you could also compute the types here with `Base.tuple_type_tail` and `Base.tuple_type_head`
+
+function maketable(geometry, properties::NamedTuple{names, types}) where {names, types}
+    F = Feature{eltype(geometry), names, StructArrays.eltypes(types)}
+    return StructArray{F}(; geometry=geometry, properties...)
+end
+sa = maketable(iter)
