@@ -3,6 +3,7 @@ using JSON3
 using Tables
 using Test
 using GeometryBasics
+using GeometryBasics.StructArrays
 
 # copied from the GeoJSON.jl test suite
 include("geojson_samples.jl")
@@ -31,9 +32,9 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
         t = GeoJSONTables.read(g)
         @test Tables.istable(t)
         @test Tables.rows(t) === t
-        @test Tables.columns(t) isa Tables.CopiedColumns
-        @test t isa GeoJSONTables.FeatureCollection
-        @test Base.propertynames(t) == (:features,)  # override this?
+        @test Tables.columns(t) isa Tables.ColumnTable
+        @test t isa StructArray
+        @test Base.propertynames(t) == (:geometry, :cartodb_id, :addr1, :addr2, :park)
         @test Tables.rowtable(t) isa Vector{<:NamedTuple}
         @test Tables.columntable(t) isa NamedTuple
 
