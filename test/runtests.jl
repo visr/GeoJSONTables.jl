@@ -39,7 +39,7 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
 
         f1, _ = iterate(t)
         @test f1 isa GeoJSONTables.Feature
-        @test !isempty(Base.propertynames(f1)  .== [:cartodb_id, :addr1, :addr2, :park])
+        @test Base.propertynames(f1) == (:cartodb_id, :addr1, :addr2, :park)
         @test f1 == t[1]
         multipolygon = GeoJSONTables.geometry(f1)
         @test multipolygon isa MultiPolygon
