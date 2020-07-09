@@ -2,9 +2,10 @@ module GeoJSONTables
 
 import JSON3, Tables
 using GeometryBasics
+# using GeometryBasics.StructArrays
 
-struct Feature{Geom, Names, Types}
-    geometry::Geom
+struct Feature{T, Names, Types}
+    geometry::T
     properties::NamedTuple{Names, Types}
 end
 
@@ -17,7 +18,6 @@ function read(source)
     fc = JSON3.read(source)
     jsonfeatures = get(fc, :features, nothing)
     if get(fc, :type, nothing) == "FeatureCollection" && jsonfeatures isa JSON3.Array
-        # TODO fill empty NamedTuple with properties
         features = [Feature(geometry(f.geometry),
                     (; zip(keys(f.properties), values(f.properties))...))
                     for f in jsonfeatures]
@@ -153,5 +153,7 @@ end
 function geometry(::Type{MultiPolygon}, g::JSON3.Array)
     return MultiPolygon([geometry(Polygon, x) for x in g])
 end
+
+include("SA_test.jl")
 
 end # module
