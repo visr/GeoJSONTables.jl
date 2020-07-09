@@ -49,5 +49,16 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
         @test linestring[1] == Line(Point(-117.913883, 33.96657), Point(-117.907767, 33.967747))
         @test linestring[2] == Line(Point(-117.907767, 33.967747), Point(-117.912919, 33.96445))
         @test linestring[3] == Line(Point(-117.912919, 33.96445), Point(-117.913883, 33.96657))
+        for s in Base.propertynames(f1)
+            if s == :geometry
+                @test Base.getproperty(f1, s) == GeoJSONTables.geometry(f1)
+            else
+                @test Base.getproperty(f1, s) == 46 ||
+                      Base.getproperty(f1, s) == "18150 E. Pathfinder Rd." ||
+                      Base.getproperty(f1, s) == "Rowland Heights" ||
+                      Base.getproperty(f1, s) == "Pathfinder Park"
+            end
+        end
+        @test GeoJSONTables.properties(f1) == (cartodb_id = 46, addr1 = "18150 E. Pathfinder Rd.", addr2 = "Rowland Heights", park = "Pathfinder Park")
     end
 end
