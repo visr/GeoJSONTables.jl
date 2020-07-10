@@ -61,7 +61,6 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
         end
         @test GeoJSONTables.properties(f1) == (cartodb_id = 46, addr1 = "18150 E. Pathfinder Rd.", addr2 = "Rowland Heights", park = "Pathfinder Park")
 
-
         s = [GeoJSONTables.Feature(Point(1, 2), city="Mumbai", rainfall=1000),
              GeoJSONTables.Feature(Point(3.78415165, 2131513), city="Dehi", rainfall=200.56444),
              GeoJSONTables.Feature(MultiPoint([Point(5.6565465, 8.913513), Point(1.89546548, 2.6923515)]), city = "Goa", rainfall = 900)]
@@ -74,7 +73,7 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
         @test sa isa StructArray
         @test length(s) == 3
     end
-    
+
     @testset "Reversbility of features remain after creating StructArray" begin
         for i in sa
             @test GeoJSONTables.properties(i) == (city="Mumbai", rainfall=1000) ||
@@ -84,6 +83,23 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
             @test GeoJSONTables.geometry(i) == Point(1, 2) ||
                   GeoJSONTables.geometry(i) == Point(3.78415165, 2131513) ||
                   GeoJSONTables.geometry(i) == MultiPoint([Point(5.6565465, 8.913513), Point(1.89546548, 2.6923515)])
+        end
+    end
+    @testset "Other Feature Collections" begin
+        for i in featurecollections
+            t = GeoJSONTables.read(g)
+            @test Tables.istable(t)
+            @test Tables.rows(t) === t
+            @test Tables.columns(t) isa Tables.ColumnTable
+            @test t isa StructArray
+            @test Base.propertynames(t) == (:geometry, keys(GeoJSONTables.properties(t[1]))...)
+            @test Tables.rowtable(t) isa Vector{<:NamedTuple}
+            @test Tables.columntable(t) isa NamedTuple
+
+            f1, _ = iterate(t)
+            @test f1 isa GeoJSONTables.Feature
+            @test Base.propertynames(t) == (:geometry, keys(GeoJSONTables.properties(t[1]))...)
+            @test f1 == t[1]
         end
     end
 end
