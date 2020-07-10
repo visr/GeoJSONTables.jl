@@ -75,16 +75,11 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
     end
 
     @testset "Reversbility of features remain after creating StructArray" begin
-        for i in sa
-            @test GeoJSONTables.properties(i) == (city="Mumbai", rainfall=1000) ||
-                  GeoJSONTables.properties(i) == (city="Dehi", rainfall=200.56444) ||
-                  GeoJSONTables.properties(i) == (city = "Goa", rainfall = 900)
-
-            @test GeoJSONTables.geometry(i) == Point(1, 2) ||
-                  GeoJSONTables.geometry(i) == Point(3.78415165, 2131513) ||
-                  GeoJSONTables.geometry(i) == MultiPoint([Point(5.6565465, 8.913513), Point(1.89546548, 2.6923515)])
-        end
+        row = sa[1]
+        @test GeoJSONTables.properties(row) == (city="Mumbai", rainfall=1000)
+        @test GeoJSONTables.geometry(row) == Point(1, 2)
     end
+    
     @testset "Other Feature Collections" begin
         for i in featurecollections
             t = GeoJSONTables.read(g)
