@@ -1,4 +1,6 @@
 # GeoJSONTables
+[![Build Status](https://travis-ci.com/visr/GeoJSONTables.jl.svg?branch=master)](https://travis-ci.com/visr/GeoJSONTables.jl)
+[![Codecov](https://codecov.io/gh/visr/GeoJSONTables.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/visr/GeoJSONTables.jl)
 
 Read [GeoJSON](https://geojson.org/) [FeatureCollections](https://tools.ietf.org/html/rfc7946#section-3.3) using [JSON3.jl](https://github.com/quinnj/JSON3.jl), and provide the [Tables.jl](https://github.com/JuliaData/Tables.jl) interface.
 
