@@ -3,6 +3,7 @@ using JSON3
 using Tables
 using Test
 using GeometryBasics
+using GeometryBasics.StructArrays
 
 # copied from the GeoJSON.jl test suite
 include("geojson_samples.jl")
@@ -31,9 +32,9 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
         t = GeoJSONTables.read(g)
         @test Tables.istable(t)
         @test Tables.rows(t) === t
-        @test Tables.columns(t) isa Tables.CopiedColumns
-        @test t isa GeoJSONTables.FeatureCollection
-        @test Base.propertynames(t) == (:features,)  # override this?
+        @test Tables.columns(t) isa Tables.ColumnTable
+        @test t isa StructArray
+        @test Base.propertynames(t) == (:geometry, :cartodb_id, :addr1, :addr2, :park)
         @test Tables.rowtable(t) isa Vector{<:NamedTuple}
         @test Tables.columntable(t) isa NamedTuple
 
@@ -48,5 +49,42 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
         @test linestring[1] == Line(Point(-117.913883, 33.96657), Point(-117.907767, 33.967747))
         @test linestring[2] == Line(Point(-117.907767, 33.967747), Point(-117.912919, 33.96445))
         @test linestring[3] == Line(Point(-117.912919, 33.96445), Point(-117.913883, 33.96657))
+        for s in Base.propertynames(f1)
+            if s == :geometry
+                @test Base.getproperty(f1, s) == GeoJSONTables.geometry(f1)
+            else
+                @test Base.getproperty(f1, s) == 46 ||
+                      Base.getproperty(f1, s) == "18150 E. Pathfinder Rd." ||
+                      Base.getproperty(f1, s) == "Rowland Heights" ||
+                      Base.getproperty(f1, s) == "Pathfinder Park"
+            end
+        end
+        @test GeoJSONTables.properties(f1) == (cartodb_id = 46, addr1 = "18150 E. Pathfinder Rd.", addr2 = "Rowland Heights", park = "Pathfinder Park")
+
+
+        s = [GeoJSONTables.Feature(Point(1, 2), city="Mumbai", rainfall=1000),
+             GeoJSONTables.Feature(Point(3.78415165, 2131513), city="Dehi", rainfall=200.56444),
+             GeoJSONTables.Feature(MultiPoint([Point(5.6565465, 8.913513), Point(1.89546548, 2.6923515)]), city = "Goa", rainfall = 900)]
+        iter = (i for  i in s)
+        sa = GeoJSONTables.maketable(iter)
+
+    @testset "Test Miscellaneous helper methods" begin
+        @test s isa Vector
+        @test iter isa Base.Generator
+        @test sa isa StructArray
+        @test length(s) == 3
     end
+    
+    @testset "Reversbility of features remain after creating StructArray" begin
+        for i in sa
+            @test GeoJSONTables.properties(i) == (city="Mumbai", rainfall=1000) ||
+                  GeoJSONTables.properties(i) == (city="Dehi", rainfall=200.56444) ||
+                  GeoJSONTables.properties(i) == (city = "Goa", rainfall = 900)
+
+            @test GeoJSONTables.geometry(i) == Point(1, 2) ||
+                  GeoJSONTables.geometry(i) == Point(3.78415165, 2131513) ||
+                  GeoJSONTables.geometry(i) == MultiPoint([Point(5.6565465, 8.913513), Point(1.89546548, 2.6923515)])
+        end
+    end
+end
 end
