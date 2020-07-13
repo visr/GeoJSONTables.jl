@@ -13,13 +13,13 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
 @testset "GeoJSONTables.jl" begin
     # only FeatureCollection supported for now
     @testset "Not FeatureCollections" begin
-        @test_throws ArgumentError GeoJSONTables.read(a)
-        @test_throws ArgumentError GeoJSONTables.read(b)
-        @test_throws ArgumentError GeoJSONTables.read(c)
-        @test_throws ArgumentError GeoJSONTables.read(d)
-        @test_throws ArgumentError GeoJSONTables.read(e)
-        @test_throws ArgumentError GeoJSONTables.read(f)
-        @test_throws ArgumentError GeoJSONTables.read(h)
+        @test_throws MethodError GeoJSONTables.read(a)
+        @test_throws MethodError GeoJSONTables.read(b)
+        @test_throws MethodError GeoJSONTables.read(c)
+        @test_throws MethodError GeoJSONTables.read(d)
+        @test_throws MethodError GeoJSONTables.read(e)
+        @test_throws MethodError GeoJSONTables.read(f)
+        @test_throws MethodError GeoJSONTables.read(h)
     end
 
     @testset "Read not crash" begin
@@ -60,13 +60,14 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
             end
         end
         @test GeoJSONTables.properties(f1) == (cartodb_id = 46, addr1 = "18150 E. Pathfinder Rd.", addr2 = "Rowland Heights", park = "Pathfinder Park")
-
-        s = [GeoJSONTables.Feature(Point(1, 2), city="Mumbai", rainfall=1000),
+    end
+    
+    s = [GeoJSONTables.Feature(Point(1, 2), city="Mumbai", rainfall=1000),
              GeoJSONTables.Feature(Point(3.78415165, 2131513), city="Dehi", rainfall=200.56444),
              GeoJSONTables.Feature(MultiPoint([Point(5.6565465, 8.913513), Point(1.89546548, 2.6923515)]), city = "Goa", rainfall = 900)]
-        iter = (i for  i in s)
-        sa = GeoJSONTables.maketable(iter)
-
+    iter = (i for  i in s)
+    sa = GeoJSONTables.structarray(iter)
+    
     @testset "Test Miscellaneous helper methods" begin
         @test s isa Vector
         @test iter isa Base.Generator
@@ -82,7 +83,8 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
     
     @testset "Other Feature Collections" begin
         for i in featurecollections
-            t = GeoJSONTables.read(g)
+            
+            t = GeoJSONTables.read(i)
             @test Tables.istable(t)
             @test Tables.rows(t) === t
             @test Tables.columns(t) isa Tables.ColumnTable
@@ -98,4 +100,4 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
         end
     end
 end
-end
+
