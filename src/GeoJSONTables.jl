@@ -9,46 +9,45 @@ struct Feature{T, Names, Types}
     properties::NamedTuple{Names, Types}
 end
 
-Feature(x; kwargs...) = Feature(x, values(kwargs))
+Feature(x; kwargs...) = Feature(x, values(kwargs)) #size of properties is not fixed
 
+"""
+Read raw jsonbytes into StructArray
+"""
 function read(source)
+    features = Feature[]
+    a = Symbol[]
     fc = JSON3.read(source)
     jsonfeatures = get(fc, :features, nothing)
+    for f in jsonfeatures 
+        prop = f.properties
+        if get(fc, :type, nothing) != nothing
+            a = propertynames(prop)   #store the property names well before, for StructArrays
+            break
+        end
+    end
     if get(fc, :type, nothing) == "FeatureCollection" && jsonfeatures isa JSON3.Array
-        features = [Feature(geometry(f.geometry),
-                    (; zip(keys(f.properties), values(f.properties))...))
-                    for f in jsonfeatures]
+        for f in jsonfeatures 
+            geom = f.geometry
+            prop = f.properties
+            
+            if !=(geom, nothing) && prop === nothing                      #only properties missing
+                push!(features, Feature(geometry(geom), miss(a)))
+            elseif geom === nothing && !=(prop, nothing)                  #only geometry missing
+                push!(features, Feature(missing, (; zip(keys(prop), values(prop))...)))
+            elseif !=(geom, nothing) && !=(prop, nothing)                 #none missing
+                push!(features, Feature(geometry(geom), (; zip(keys(prop), values(prop))...)))
+            elseif !=(geom, nothing) && !=(prop, nothing)                   #both missing
+                push!(features, Feature(missing, miss(a)))
+            end
+        end
         iter = (i for i in features)
-        maketable(iter)
+        structarray(iter)
     else
         throw(ArgumentError("input source is not a GeoJSON FeatureCollection"))
     end
 end
 
-getnamestypes(::Type{Feature{T, Names, Types}}) where {T, Names, Types} = (T, Names, Types)
-
-function StructArrays.staticschema(::Type{F}) where {F<:Feature}
-    T, names, types = getnamestypes(F)
-    NamedTuple{(:geometry, names...), Base.tuple_type_cons(T, types)}
-end
-
- function StructArrays.createinstance(::Type{F}, x, args...) where {F<:Feature}
-     T , names, types = getnamestypes(F)
-     Feature(x, NamedTuple{names, types}(args))
- end
-
-maketable(iter) = maketable(Tables.columntable(iter)::NamedTuple)
-maketable(cols::NamedTuple) = maketable(first(cols), Base.tail(cols)) # you could also compute the types here with `Base.tuple_type_tail` and `Base.tuple_type_head`
-
-function maketable(geometry, properties::NamedTuple{names, types}) where {names, types}
-    F = Feature{eltype(geometry), names, StructArrays.eltypes(types)}
-    return StructArray{F}(; geometry=geometry, properties...)
-end
-
-miss(x) = ifelse(x === nothing, missing, x)
-
-# these features always have type="Feature", so exclude that
-# the keys in properties are added here for direct access
 Base.propertynames(f::Feature) = (:geometry, keys(properties(f))...)
 
 "Get the feature's geometry as a GeometryBasics geometry type"
@@ -64,7 +63,28 @@ Returns missing for null/nothing or not present, to work nicely with
 properties that are not defined for every feature. If it is a table,
 it should in some sense be defined.
 """
-Base.getproperty(f::Feature, s::Symbol) = s == :geometry ? getfield(f, 1) : getproperty(getfield(f, 2), s)
+function Base.getproperty(f::Feature, s::Symbol)
+    if s == :geometry
+        val = getfield(f, 1)
+        miss(val)
+    else
+        val = getproperty(getfield(f, 2), s)
+        miss(val)
+    end
+end
+
+function miss(x)
+    if x isa Array{Symbol, 1} && !isempty(x)                #incase a few properties are present
+        val = fill(missing, length(x))
+        return NamedTuple{Tuple(x)}(val)
+    elseif x isa Array{Symbol, 1} && isempty(x)             #incase all the properties are missing 
+        return NamedTuple{Tuple([:properties])}([missing])
+    elseif x === missing
+        return missing
+    else
+        return x
+    end
+end
 
 function Base.show(io::IO, f::Feature)
     geomtype = nameof(typeof(geometry(f)))
@@ -72,67 +92,7 @@ function Base.show(io::IO, f::Feature)
 end
 Base.show(io::IO, ::MIME"text/plain", f::Feature) = show(io, f)
 
-"""
-Take the JSON3 representation of a GeoJSON geometry
-and convert it to the corresponding GeometryBasics geometry.
-"""
-function geometry end
+include("Struct_Arrays.jl")
+include("geometry_basics.jl")
 
-geometry(::Nothing) = missing
-
-function geometry(g::JSON3.Object)
-    t = g.type
-    if t == "Point"
-        return geometry(Point, g.coordinates)
-    elseif t == "LineString"
-        return geometry(LineString, g.coordinates)
-    elseif t == "Polygon"
-        return geometry(Polygon, g.coordinates)
-    elseif t == "MultiPoint"
-        return geometry(MultiPoint, g.coordinates)
-    elseif t == "MultiLineString"
-        return geometry(MultiLineString, g.coordinates)
-    elseif t == "MultiPolygon"
-        return geometry(MultiPolygon, g.coordinates)
-    elseif t == "GeometryCollection"
-        return [geometry(geom) for geom in g.geometries]
-    else
-        throw(ArgumentError(string("Unknown geometry type ", t)))
-    end
-end
-
-function geometry(::Type{Point}, g::JSON3.Array)
-    return Point{2, Float64}(g)
-end
-
-function geometry(::Type{LineString}, g::JSON3.Array)
-    return LineString([Point{2, Float64}(p) for p in g], 1)
-end
-
-function geometry(::Type{Polygon}, g::JSON3.Array)
-    # TODO introduce LinearRing type in GeometryBasics?
-    nring = length(g)
-    exterior = LineString([Point{2, Float64}(p) for p in g[1]], 1)
-    if nring == 1  # only exterior
-        return Polygon(exterior)
-    else  # exterior and interior(s)
-        interiors = Vector{typeof(exterior)}(undef, nring)
-        for i in 2:nring
-            interiors[i-1] = LineString([Point{2, Float64}(p) for p in g[i]], 1)
-        end
-        return Polygon(exterior, interiors)
-    end
-end
-
-function geometry(::Type{MultiPoint}, g::JSON3.Array)
-    return MultiPoint([geometry(Point, x) for x in g])
-end
-
-function geometry(::Type{MultiLineString}, g::JSON3.Array)
-    return MultiLineString([geometry(LineString, x) for x in g])
-end
-
-function geometry(::Type{MultiPolygon}, g::JSON3.Array)
-    return MultiPolygon([geometry(Polygon, x) for x in g])
-end
 end # module
