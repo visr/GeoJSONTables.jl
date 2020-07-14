@@ -8,7 +8,7 @@ using GeometryBasics.StructArrays
 # copied from the GeoJSON.jl test suite
 include("geojson_samples.jl")
 featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointnull,
-    poly, polyhole, collection, osm_buildings]
+    poly, polyhole, collection, osm_buildings, test1]
 
 @testset "GeoJSONTables.jl" begin
     # only FeatureCollection supported for now
@@ -20,6 +20,7 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
         @test_throws MethodError GeoJSONTables.read(e)
         @test_throws MethodError GeoJSONTables.read(f)
         @test_throws MethodError GeoJSONTables.read(h)
+        @test_throws ArgumentError GeoJSONTables.read(test)
     end
 
     @testset "Read not crash" begin
@@ -69,10 +70,16 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
     sa = GeoJSONTables.structarray(iter)
     
     @testset "Test Miscellaneous helper methods" begin
+        f = GeoJSONTables.Feature(Point(1, 2), city = "Mumbai", rainfall = 1000)
+        @test sprint(GeoJSONTables.show, f) == 
+        "Feature with geometry type Point and properties (:geometry, :city, :rainfall)\n"
+
         @test s isa Vector
         @test iter isa Base.Generator
         @test sa isa StructArray
         @test length(s) == 3
+        @test GeoJSONTables.getnamestypes(typeof(f)) == (Point{2,Int64}, (:city, :rainfall), Tuple{String,Int64})
+        @test StructArrays.staticschema(typeof(f)) == NamedTuple{(:geometry, :city, :rainfall),Tuple{Point{2,Int64},String,Int64}}
     end
 
     @testset "Reversbility of features remain after creating StructArray" begin
@@ -94,9 +101,14 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
             @test Tables.columntable(t) isa NamedTuple
 
             f1, _ = iterate(t)
+            geom = f1.geometry
+            prop = GeoJSONTables.properties(f1)
+            a = geom, prop...
             @test f1 isa GeoJSONTables.Feature
             @test Base.propertynames(t) == (:geometry, keys(GeoJSONTables.properties(t[1]))...)
             @test f1 == t[1]
+            @test GeoJSONTables.getnamestypes(typeof(f1)) == (typeof(geom), keys(prop), typeof(values(prop)))
+            @test StructArrays.staticschema(typeof(f1)) == NamedTuple{Base.propertynames(f1),typeof(a)}
         end
     end
 end

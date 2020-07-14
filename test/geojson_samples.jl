@@ -385,3 +385,39 @@ osm_buildings = """{
     }
   }]
 }""";
+
+test = """{
+  "type": "NotFeatureCollection",
+  "features": [{
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [13.42634, 52.49533],
+          [13.42660, 52.49524]
+        ]
+      ]
+    },
+    "properties": {
+      "color": "rgb(255,200,150)",
+      "height": 150
+    }]
+  }""";
+
+  test1 = """{
+    "type": "FeatureCollection",
+    "features": [{
+      "type": "Feature",
+      "geometry": null,
+      "properties": null},
+      {
+      "type": "Feature",
+      "geometry": {
+         "type": "Point",
+          "coordinates": 
+          [ 100.0, 0.0 ] 
+          } ,
+      "properties": null}
+      ]
+    }""";
