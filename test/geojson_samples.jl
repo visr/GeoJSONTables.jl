@@ -405,7 +405,7 @@ test = """{
     }]
   }""";
 
-  test1 = """{
+test1 = """{
     "type": "FeatureCollection",
     "features": [{
       "type": "Feature",
@@ -414,10 +414,50 @@ test = """{
       {
       "type": "Feature",
       "geometry": {
-         "type": "Point",
+         "type": "MultiPoint",
           "coordinates": 
-          [ 100.0, 0.0 ] 
+          [
+            [100.2785, 0.0893],
+            [1.0, 2.0]
+          ] 
           } ,
-      "properties": null}
+      "properties": null
+      },
+      {
+      "type": "Feature",
+      "geometry": {
+         "type": "MultiLineString",
+          "coordinates": [
+            [
+            [3.75, 9.25],
+            [-130.95, 1.52]], 
+            [[23.15, -34.25], 
+            [-1.35, -4.65], 
+            [3.45, 77.95]
+            ]
+          ]
+          } ,
+      "properties": null
+      }
       ]
     }""";
+
+
+unknown_geom = """{
+  "type": "FeatureCollection",
+  "features": [{
+    "type": "Feature",
+    "geometry": {
+      "type": "AbstractGeometry",
+      "coordinates": [
+        [
+          [13.42634, 52.49533],
+          [13.42660, 52.49524]
+        ]
+      ]
+    },
+    "properties": {
+      "color": "rgb(255,200,150)",
+      "height": 150
+    }]
+  }""";

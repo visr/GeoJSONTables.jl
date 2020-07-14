@@ -21,6 +21,7 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
         @test_throws MethodError GeoJSONTables.read(f)
         @test_throws MethodError GeoJSONTables.read(h)
         @test_throws ArgumentError GeoJSONTables.read(test)
+        @test_throws ArgumentError GeoJSONTables.read(unknown_geom)
     end
 
     @testset "Read not crash" begin
