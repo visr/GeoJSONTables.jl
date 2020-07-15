@@ -21,7 +21,7 @@ function read(source)
     jsonfeatures = get(fc, :features, nothing)
     for f in jsonfeatures 
         prop = f.properties
-        if get(fc, :type, nothing) != nothing
+        if !=(get(f, :properties, nothing), nothing)
             a = propertynames(prop)   #store the property names well before, for StructArrays
             break
         end
@@ -37,7 +37,7 @@ function read(source)
                 push!(features, Feature(missing, (; zip(keys(prop), values(prop))...)))
             elseif !=(geom, nothing) && !=(prop, nothing)                 #none missing
                 push!(features, Feature(geometry(geom), (; zip(keys(prop), values(prop))...)))
-            elseif !=(geom, nothing) && !=(prop, nothing)                   #both missing
+            elseif geom === nothing && prop === nothing                   #both missing
                 push!(features, Feature(missing, miss(a)))
             end
         end
