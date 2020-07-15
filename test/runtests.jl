@@ -10,16 +10,19 @@ include("geojson_samples.jl")
 featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointnull,
     poly, polyhole, collection, osm_buildings, test1]
 
+json = JSON3.read(a)
+jsonfeatures = get(json, :features, nothing)
+
 @testset "GeoJSONTables.jl" begin
     # only FeatureCollection supported for now
     @testset "Not FeatureCollections" begin
-        @test_throws MethodError GeoJSONTables.read(a)
-        @test_throws MethodError GeoJSONTables.read(b)
-        @test_throws MethodError GeoJSONTables.read(c)
-        @test_throws MethodError GeoJSONTables.read(d)
-        @test_throws MethodError GeoJSONTables.read(e)
-        @test_throws MethodError GeoJSONTables.read(f)
-        @test_throws MethodError GeoJSONTables.read(h)
+        @test_throws ArgumentError GeoJSONTables.read(a)
+        @test_throws ArgumentError GeoJSONTables.read(b)
+        @test_throws ArgumentError GeoJSONTables.read(c)
+        @test_throws ArgumentError GeoJSONTables.read(d)
+        @test_throws ArgumentError GeoJSONTables.read(e)
+        @test_throws ArgumentError GeoJSONTables.read(f)
+        @test_throws ArgumentError GeoJSONTables.read(h)
         @test_throws ArgumentError GeoJSONTables.read(test)
     end
 
@@ -110,7 +113,8 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
             @test GeoJSONTables.getnamestypes(typeof(f1)) == (typeof(geom), keys(prop), typeof(values(prop)))
             @test StructArrays.staticschema(typeof(f1)) == NamedTuple{Base.propertynames(f1),typeof(a)}
             @test_throws ArgumentError GeoJSONTables.read(unknown_geom)
-            @test GeoJSONTables.miss(1) == 1 
+            @test GeoJSONTables.miss(f1) == f1 
+            @test "$(GeoJSONTables.miss([:a, :b]))" == "(a = missing, b = missing)"
         end
     end
 end

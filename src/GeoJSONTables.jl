@@ -19,14 +19,14 @@ function read(source)
     a = Symbol[]
     fc = JSON3.read(source)
     jsonfeatures = get(fc, :features, nothing)
-    for f in jsonfeatures 
-        prop = f.properties
-        if !=(get(f, :properties, nothing), nothing)
-            a = propertynames(prop)   #store the property names well before, for StructArrays
-            break
-        end
-    end
     if get(fc, :type, nothing) == "FeatureCollection" && jsonfeatures isa JSON3.Array
+        for f in jsonfeatures 
+            prop = f.properties
+            if !=(get(f, :properties, nothing), nothing)
+                a = propertynames(prop)   #store the property names well before, for StructArrays
+                break
+            end
+        end
         for f in jsonfeatures 
             geom = f.geometry
             prop = f.properties
