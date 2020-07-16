@@ -125,6 +125,9 @@ jsonfeatures = get(json, :features, nothing)
 
             @test "$(GeoJSONTables.geo2feat(geom, prop))" == 
             "Feature with geometry type $(nameof(typeof(geom))) and properties (:geometry, :city, :rainfall)\n"
+
+            @test "$(GeoJSONTables.geo2feat(geom, city = "Mumbai", rainfall = 1010))" == 
+            "Feature with geometry type $(nameof(typeof(geom))) and properties (:geometry, :city, :rainfall)\n"
         end
     end
 end
