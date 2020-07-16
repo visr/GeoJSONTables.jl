@@ -460,3 +460,22 @@ unknown_geom = """{
   }
     ]
   }""";
+
+prop = (city = "Mumbai", rainfall = 1010)
+missing_prop = [Point(0, 1), 
+                MultiPoint([Point(0, 1), Point(1, 2)]), 
+                
+                LineString([Point(0.0, 1.0)]),
+                MultiLineString([LineString([Point(0.0, 1.0)]), LineString([Point(1.0, 6.0)])]),
+
+                Polygon(LineString([Point(0.0, 0.0), Point(0.0, 100.0)]),
+                        [LineString([Point(1.0, 1.0), Point(0.0, 100.0)]),
+                        LineString([Point(0.0, 100.0), Point(200.0, 100.0)])]),
+                MultiPolygon([Polygon(LineString([Point(0.0, 0.0), Point(0.0, 100.0)]),
+                                      [LineString([Point(1.0, 1.0), Point(0.0, 100.0)]),
+                                      LineString([Point(0.0, 100.0), Point(200.0, 100.0)])]), 
+                              Polygon(LineString([Point(2.0, 0.0), Point(9.0, 20.0)]),
+                                      [LineString([Point(3.0, 1.0), Point(6.0, 10.0)]),
+                                      LineString([Point(5.0, 100.0), Point(200.0, 99.0)])])])
+                ]
+
