@@ -107,6 +107,24 @@ function Base.show(io::IO, f::Feature)
 end
 Base.show(io::IO, ::MIME"text/plain", f::Feature) = show(io, f)
 
+"""
+Gives a GeoJSON Feature for a GeometryBasics geometry and metadata/properties
+
+# Example
+```julia
+julia> geo2feat(Point(30.0, 10.0), city = "Mumbai", rainfall = 1000.1)
+Feature with geometry type Point and properties (:geometry, :city, :rainfall)
+"""
+function geo2feat(x; kwargs...)
+    prop = values(kwargs)
+    Feature(x, miss(prop))
+end
+
+#incase the properties are store in a namedtuple
+function geo2feat(x,  nt::NamedTuple{Names, Types}) where {Names, Types} 
+    Feature(x, miss(nt))
+end
+
 include("Struct_Arrays.jl")
 include("geometry_basics.jl")
 
