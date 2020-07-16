@@ -13,8 +13,21 @@ Feature(x; kwargs...) = Feature(x, values(kwargs)) #size of properties is not fi
 
 """
 Read raw jsonbytes into StructArray
+An extra parameter parameter `read_as_JSON3 = true` reads it as a JSON3 dict
+While the default `false` reads it tabularly into a StructArray
 """
-function read(source)
+function read(source, read_as_JSON = false)
+    if read_as_JSON 
+        JSON3.read(source) #give out a JSON3.object
+    else 
+        readtable(source)        
+    end
+end
+
+"""
+reads raw jsonbytes into a StructArray table
+"""
+function readtable(source)
     features = Feature[]
     a = Symbol[]
     fc = JSON3.read(source)
@@ -81,6 +94,8 @@ function miss(x)
         return NamedTuple{Tuple([:properties])}([missing])
     elseif x === missing
         return missing
+    elseif x === NamedTuple()                               #incase an empty namedtuple is given
+        return NamedTuple{Tuple([:missing])}([missing])
     else
         return x
     end
@@ -94,5 +109,6 @@ Base.show(io::IO, ::MIME"text/plain", f::Feature) = show(io, f)
 
 include("Struct_Arrays.jl")
 include("geometry_basics.jl")
+
 
 end # module
