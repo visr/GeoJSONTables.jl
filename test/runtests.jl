@@ -64,8 +64,6 @@ jsonfeatures = get(json, :features, nothing)
             end
         end
         @test GeoJSONTables.properties(f1) == (cartodb_id = 46, addr1 = "18150 E. Pathfinder Rd.", addr2 = "Rowland Heights", park = "Pathfinder Park")
-        @test sprint(GeoJSONTables.show, t) == "FeatureCollection with 1 Features\n"
-
     end
     
     s = [GeoJSONTables.Feature(Point(1, 2), city="Mumbai", rainfall=1000),
