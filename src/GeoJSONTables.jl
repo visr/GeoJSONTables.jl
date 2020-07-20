@@ -101,10 +101,13 @@ function miss(x)
     end
 end
 
+Base.show(io::IO, fc::StructArray) = println(io, "FeatureCollection with $(length(fc)) Features")
 function Base.show(io::IO, f::Feature)
     geomtype = nameof(typeof(geometry(f)))
     println(io, "Feature with geometry type $geomtype and properties $(propertynames(f))")
 end
+
+Base.show(io::IO, ::MIME"text/plain", fc::StructArray) = show(io, fc)
 Base.show(io::IO, ::MIME"text/plain", f::Feature) = show(io, f)
 
 """
