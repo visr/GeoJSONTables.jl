@@ -1,5 +1,4 @@
 language: julia
 julia:
   - 1
-after_success:
 codecov: true
