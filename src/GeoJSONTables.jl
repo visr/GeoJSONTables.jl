@@ -35,7 +35,7 @@ function readtable(source)
     if get(fc, :type, nothing) == "FeatureCollection" && jsonfeatures isa JSON3.Array
         for f in jsonfeatures 
             prop = f.properties
-            if !=(get(f, :properties, nothing), nothing)
+            if get(f, :properties, nothing) != nothing
                 a = propertynames(prop)   #store the property names well before, for StructArrays
                 break
             end
@@ -78,10 +78,10 @@ it should in some sense be defined.
 """
 function Base.getproperty(f::Feature, s::Symbol)
     if s == :geometry
-        val = getfield(f, 1)
+        val = geometry(f)
         miss(val)
     else
-        val = getproperty(getfield(f, 2), s)
+        val = getproperty(properties(f), s)
         miss(val)
     end
 end

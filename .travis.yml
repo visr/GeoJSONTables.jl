@@ -3,4 +3,3 @@ julia:
   - 1
 after_success:
 codecov: true
-# - julia -e 'cd(Pkg.dir("GeoJSONTables")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'

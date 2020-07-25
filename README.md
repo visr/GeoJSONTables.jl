@@ -11,7 +11,8 @@ For now it supports reading, of the following
   
 This package is heavily inspired by [JSONTables.jl](https://github.com/JuliaData/JSONTables.jl), which
 does the same thing for the general JSON format. GeoJSONTables puts the geometry in a `geometry` column, and adds all
-properties in the columns individually. The geometry and non-scalar properties are kept as GeometryBasics geometries and NamedTuple respectively, and both of them are wrapped in a `Feature`, while a StructArray of Features represents a `FeatureCollection`. The StructArrays approach is inspired by GeometryBasics.
+properties in the columns individually. The geometry and non-scalar properties are kept as GeometryBasics geometries and NamedTuple respectively.
+A StructArray of `Features` represents a `FeatureCollection`. The StructArrays approach is inspired by GeometryBasics.
 For a faster/lower level interface, the geojson can be can also be parsed as a JSON3 dictionary.
 
 Going forward, it would be nice to try developing a GeoTables.jl, similarly to Tables.jl, but with special support for a geometry column, that supports a diverse set of geometries, such as those of [LibGEOS](https://github.com/JuliaGeo/LibGEOS.jl), [Shapefile](https://github.com/JuliaGeo/Shapefile.jl), 
