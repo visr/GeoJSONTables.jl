@@ -12,22 +12,9 @@ end
 Feature(x; kwargs...) = Feature(x, values(kwargs)) #size of properties is not fixed
 
 """
-Read raw jsonbytes into StructArray
-An extra parameter parameter `read_as_JSON3 = true` reads it as a JSON3 dict
-While the default `false` reads it tabularly into a StructArray
-"""
-function read(source, read_as_JSON = false)
-    if read_as_JSON 
-        JSON3.read(source) #give out a JSON3.object
-    else 
-        readtable(source)        
-    end
-end
-
-"""
 reads raw jsonbytes into a StructArray table
 """
-function readtable(source)
+function read(source)
     features = Feature[]
     a = Symbol[]
     fc = JSON3.read(source)

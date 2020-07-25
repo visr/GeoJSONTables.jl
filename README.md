@@ -28,20 +28,8 @@ julia> using GeoJSONTables, DataFrames, GeometryBasics
 
 julia> jsonbytes = read("path/to/a.geojson");
 
-#= 
-   A true flag can be passed in the read function 
-   to read the jsonbytes as a JSON3 dict 
-   the default, false, will read it into a StructArray 
-=#
 julia> fc = GeoJSONTables.read(jsonbytes)
 FeatureCollection with 171 Features
-
-julia> fc_json3 = GeoJSONTables.read(jsonbytes, true)
-JSON3.Object{Array{UInt8,1},Array{UInt64,1}} with 4 entries:
-    :type     => "FeatureCollection"
-    :name     => "a"
-    :crs      => {…
-    :features => JSON3.Object[{…
 
 julia> first(fc)
 Feature with geometry type Polygon and properties (:geometry, :timestamp, :version, :changeset, :user, :uid, :area, :highway, :type, :id)
@@ -59,4 +47,15 @@ julia> prop = (city = "Delhi", rainfall = 200)
 
 julia> f = GeoJSONTables.geo2feat(Point(100.0, 200.0), prop)
 Feature with geometry type Point and properties (:geometry, :city, :rainfall)
+
+# for a lower level JSON3 interface(read the jsonbytes as a JSON3 object)
+using GeoJSONTables.JSON3
+
+julia> JSON3.read(jsonbytes)
+JSON3.Object{Array{UInt8,1},Array{UInt64,1}} with 4 entries:
+    :type     => "FeatureCollection"
+    :name     => "a"
+    :crs      => {…
+    :features => JSON3.Object[{…
+
 ```
