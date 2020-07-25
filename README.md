@@ -38,14 +38,14 @@ Feature with geometry type Polygon and properties (:geometry, :timestamp, :versi
 julia> df = DataFrame(fc)
 
 # GeometryBasics geometries can be passed along with metadata, into a Feature
-julia> f = GeoJSONTables.geo2feat(Point(1.0, 2.0), city = "Mumbai", rainfall = 1010)
+julia> f = GeoJSONTables.Feature(Point(1.0, 2.0), city = "Mumbai", rainfall = 1010)
 Feature with geometry type Point and properties (:geometry, :city, :rainfall)
 
 # metdata can be also passed as a NamedTuple 
 julia> prop = (city = "Delhi", rainfall = 200)
 (city = "Delhi", rainfall = 200)
 
-julia> f = GeoJSONTables.geo2feat(Point(100.0, 200.0), prop)
+julia> f = GeoJSONTables.Feature(Point(100.0, 200.0), prop)
 Feature with geometry type Point and properties (:geometry, :city, :rainfall)
 
 # for a lower level JSON3 interface(read the jsonbytes as a JSON3 object)

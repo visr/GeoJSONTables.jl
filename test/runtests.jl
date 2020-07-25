@@ -120,13 +120,13 @@ jsonfeatures = get(json, :features, nothing)
 
     @testset "Reading features" begin
         for geom in missing_prop
-            @test "$(GeoJSONTables.geo2feat(geom))" == 
+            @test "$(GeoJSONTables.Feature(geom))" == 
             "Feature with geometry type $(nameof(typeof(geom))) and properties (:geometry, :missing)\n"
 
-            @test "$(GeoJSONTables.geo2feat(geom, prop))" == 
+            @test "$(GeoJSONTables.Feature(geom, prop))" == 
             "Feature with geometry type $(nameof(typeof(geom))) and properties (:geometry, :city, :rainfall)\n"
 
-            @test "$(GeoJSONTables.geo2feat(geom, city = "Mumbai", rainfall = 1010))" == 
+            @test "$(GeoJSONTables.Feature(geom, city = "Mumbai", rainfall = 1010))" == 
             "Feature with geometry type $(nameof(typeof(geom))) and properties (:geometry, :city, :rainfall)\n"
         end
     end
