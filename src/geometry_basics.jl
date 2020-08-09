@@ -40,7 +40,7 @@ function geometry(::Type{Polygon}, g::JSON3.Array)
     if nring == 1  # only exterior
         return Polygon(exterior)
     else  # exterior and interior(s)
-        interiors = Vector{typeof(exterior)}(undef, nring)
+        interiors = Vector{typeof(exterior)}(undef, nring-1)
         for i in 2:nring
             interiors[i-1] = LineString([Point{2, Float64}(p) for p in g[i]], 1)
         end
