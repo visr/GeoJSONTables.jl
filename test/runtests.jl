@@ -1,13 +1,17 @@
 using GeoJSONTables
 using JSON3
-import GeoInterface
 using Tables
 using Test
+using GeometryBasics
+using GeometryBasics.StructArrays
 
 # copied from the GeoJSON.jl test suite
 include("geojson_samples.jl")
 featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointnull,
-    poly, polyhole, collection, osm_buildings]
+    poly, polyhole, collection, osm_buildings, test1]
+
+json = JSON3.read(a)
+jsonfeatures = get(json, :features, nothing)
 
 @testset "GeoJSONTables.jl" begin
     # only FeatureCollection supported for now
@@ -19,6 +23,7 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
         @test_throws ArgumentError GeoJSONTables.read(e)
         @test_throws ArgumentError GeoJSONTables.read(f)
         @test_throws ArgumentError GeoJSONTables.read(h)
+        @test_throws ArgumentError GeoJSONTables.read(test)
     end
 
     @testset "Read not crash" begin
@@ -31,47 +36,99 @@ featurecollections = [g, multipolygon, realmultipolygon, polyline, point, pointn
         t = GeoJSONTables.read(g)
         @test Tables.istable(t)
         @test Tables.rows(t) === t
-        @test Tables.columns(t) isa Tables.CopiedColumns
-        @test t isa GeoJSONTables.FeatureCollection{<:JSON3.Array{JSON3.Object}}
-        @test Base.propertynames(t) == (:json,)  # override this?
+        @test Tables.columns(t) isa Tables.ColumnTable
+        @test t isa StructArray
+        @test Base.propertynames(t) == (:geometry, :cartodb_id, :addr1, :addr2, :park)
         @test Tables.rowtable(t) isa Vector{<:NamedTuple}
         @test Tables.columntable(t) isa NamedTuple
 
         f1, _ = iterate(t)
-        @test f1 isa GeoJSONTables.Feature{<:JSON3.Object}
-        @test all(Base.propertynames(f1) .== [:cartodb_id, :addr1, :addr2, :park])
+        @test f1 isa GeoJSONTables.Feature
+        @test Base.propertynames(f1) == (:geometry, :cartodb_id, :addr1, :addr2, :park) #we'll need to add it for StructArrays anyway
         @test f1 == t[1]
-        @test GeoJSONTables.geometry(f1) isa JSON3.Object
-        @test GeoJSONTables.geometry(f1).type === "MultiPolygon"
-        @test GeoJSONTables.geometry(f1).coordinates isa JSON3.Array
-        @test length(GeoJSONTables.geometry(f1).coordinates[1][1]) == 4
-        @test GeoJSONTables.geometry(f1).coordinates[1][1][1] == [-117.913883,33.96657]
-        @test GeoJSONTables.geometry(f1).coordinates[1][1][2] == [-117.907767,33.967747]
-        @test GeoJSONTables.geometry(f1).coordinates[1][1][3] == [-117.912919,33.96445]
-        @test GeoJSONTables.geometry(f1).coordinates[1][1][4] == [-117.913883,33.96657]
+        multipolygon = GeoJSONTables.geometry(f1)
+        @test multipolygon isa MultiPolygon
+        linestring = multipolygon[1].exterior
+        @test length(linestring) == 3
+        @test linestring[1] == Line(Point(-117.913883, 33.96657), Point(-117.907767, 33.967747))
+        @test linestring[2] == Line(Point(-117.907767, 33.967747), Point(-117.912919, 33.96445))
+        @test linestring[3] == Line(Point(-117.912919, 33.96445), Point(-117.913883, 33.96657))
+        for s in Base.propertynames(f1)
+            if s == :geometry
+                @test Base.getproperty(f1, s) == GeoJSONTables.geometry(f1)
+            else
+                @test Base.getproperty(f1, s) == 46 ||
+                      Base.getproperty(f1, s) == "18150 E. Pathfinder Rd." ||
+                      Base.getproperty(f1, s) == "Rowland Heights" ||
+                      Base.getproperty(f1, s) == "Pathfinder Park"
+            end
+        end
+        @test GeoJSONTables.properties(f1) == (cartodb_id = 46, addr1 = "18150 E. Pathfinder Rd.", addr2 = "Rowland Heights", park = "Pathfinder Park")
+    end
+    
+    s = [GeoJSONTables.Feature(Point(1, 2), city="Mumbai", rainfall=1000),
+             GeoJSONTables.Feature(Point(3.78415165, 2131513), city="Dehi", rainfall=200.56444),
+             GeoJSONTables.Feature(MultiPoint([Point(5.6565465, 8.913513), Point(1.89546548, 2.6923515)]), city = "Goa", rainfall = 900)]
+    iter = (i for  i in s)
+    sa = GeoJSONTables.structarray(iter)
+    
+    @testset "Test Miscellaneous helper methods" begin
+        f = GeoJSONTables.Feature(Point(1, 2), city = "Mumbai", rainfall = 1000)
+        @test sprint(GeoJSONTables.show, f) == 
+        "Feature with geometry type Point and properties (:geometry, :city, :rainfall)\n"
 
-        @testset "GeoInterface" begin
-            @test GeoInterface.geotype(t) === :FeatureCollection
-            @test GeoInterface.geotype(f1) === :Feature
-            gi_mp = GeoInterface.geometry(f1)
-            @test gi_mp isa GeoInterface.MultiPolygon
-            @test GeoInterface.geotype(gi_mp) === :MultiPolygon
-            properties = GeoInterface.properties(f1)
-            @test properties isa Dict{String, Any}
-            @test properties["addr2"] === "Rowland Heights"
-            @test_throws MethodError GeoInterface.bbox(t)
-            @test GeoInterface.bbox(f1) === nothing
-            coordinates = GeoInterface.coordinates(f1)
-            @test coordinates == Vector{Vector{Vector{Float64}}}[[[
-                [-117.913883, 33.96657],
-                [-117.907767, 33.967747],
-                [-117.912919, 33.96445],
-                [-117.913883, 33.96657],
-            ]]]
-            gi_f = GeoInterface.Feature(f1)
-            @test gi_f isa GeoInterface.Feature
-            gi_fc = GeoInterface.FeatureCollection(t)
-            @test gi_fc isa GeoInterface.FeatureCollection
+        @test s isa Vector
+        @test iter isa Base.Generator
+        @test sa isa StructArray
+        @test length(s) == 3
+        @test GeoJSONTables.getnamestypes(typeof(f)) == (Point{2,Int64}, (:city, :rainfall), Tuple{String,Int64})
+        @test StructArrays.staticschema(typeof(f)) == NamedTuple{(:geometry, :city, :rainfall),Tuple{Point{2,Int64},String,Int64}}
+    end
+
+    @testset "Reversbility of features remain after creating StructArray" begin
+        row = sa[1]
+        @test GeoJSONTables.properties(row) == (city="Mumbai", rainfall=1000)
+        @test GeoJSONTables.geometry(row) == Point(1, 2)
+    end
+    
+    @testset "Other Feature Collections" begin
+        for i in featurecollections
+            
+            t = GeoJSONTables.read(i)
+            @test Tables.istable(t)
+            @test Tables.rows(t) === t
+            @test Tables.columns(t) isa Tables.ColumnTable
+            @test t isa StructArray
+            @test Base.propertynames(t) == (:geometry, keys(GeoJSONTables.properties(t[1]))...)
+            @test Tables.rowtable(t) isa Vector{<:NamedTuple}
+            @test Tables.columntable(t) isa NamedTuple
+
+            f1, _ = iterate(t)
+            geom = f1.geometry
+            prop = GeoJSONTables.properties(f1)
+            a = geom, prop...
+            @test f1 isa GeoJSONTables.Feature
+            @test Base.propertynames(t) == (:geometry, keys(GeoJSONTables.properties(t[1]))...)
+            @test f1 == t[1]
+            @test GeoJSONTables.getnamestypes(typeof(f1)) == (typeof(geom), keys(prop), typeof(values(prop)))
+            @test StructArrays.staticschema(typeof(f1)) == NamedTuple{Base.propertynames(f1),typeof(a)}
+            @test_throws ArgumentError GeoJSONTables.read(unknown_geom)
+            @test GeoJSONTables.miss(f1) == f1 
+            @test "$(GeoJSONTables.miss([:a, :b]))" == "(a = missing, b = missing)"
+        end
+    end
+
+    @testset "Reading features" begin
+        for geom in missing_prop
+            @test "$(GeoJSONTables.Feature(geom))" == 
+            "Feature with geometry type $(nameof(typeof(geom))) and properties (:geometry, :missing)\n"
+
+            @test "$(GeoJSONTables.Feature(geom, prop))" == 
+            "Feature with geometry type $(nameof(typeof(geom))) and properties (:geometry, :city, :rainfall)\n"
+
+            @test "$(GeoJSONTables.Feature(geom, city = "Mumbai", rainfall = 1010))" == 
+            "Feature with geometry type $(nameof(typeof(geom))) and properties (:geometry, :city, :rainfall)\n"
         end
     end
 end
+

@@ -385,3 +385,97 @@ osm_buildings = """{
     }
   }]
 }""";
+
+test = """{
+  "type": "NotFeatureCollection",
+  "features": [{
+    "type": "Feature",
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [13.42634, 52.49533],
+          [13.42660, 52.49524]
+        ]
+      ]
+    },
+    "properties": {
+      "color": "rgb(255,200,150)",
+      "height": 150
+    }]
+  }""";
+
+test1 = """{
+    "type": "FeatureCollection",
+    "features": [{
+      "type": "Feature",
+      "geometry": null,
+      "properties": null},
+      {
+      "type": "Feature",
+      "geometry": {
+         "type": "MultiPoint",
+          "coordinates": 
+          [
+            [100.2785, 0.0893],
+            [1.0, 2.0]
+          ] 
+          } ,
+      "properties": null
+      },
+      {
+      "type": "Feature",
+      "geometry": {
+         "type": "MultiLineString",
+          "coordinates": [
+            [
+            [3.75, 9.25],
+            [-130.95, 1.52]], 
+            [[23.15, -34.25], 
+            [-1.35, -4.65], 
+            [3.45, 77.95]
+            ]
+          ]
+          } ,
+      "properties": null
+      }
+      ]
+    }""";
+
+
+unknown_geom = """{
+  "type": "FeatureCollection",
+  "features": [{
+    "type": "Feature",
+    "geometry": {
+      "type": "AbstractGeometry",
+      "coordinates": [
+        [
+          [13.42634, 52.49533],
+          [13.42660, 52.49524]
+        ]
+      ]
+    },
+    "properties": null
+  }
+    ]
+  }""";
+
+prop = (city = "Mumbai", rainfall = 1010)
+missing_prop = [Point(0, 1), 
+                MultiPoint([Point(0, 1), Point(1, 2)]), 
+                
+                LineString([Point(0.0, 1.0)]),
+                MultiLineString([LineString([Point(0.0, 1.0)]), LineString([Point(1.0, 6.0)])]),
+
+                Polygon(LineString([Point(0.0, 0.0), Point(0.0, 100.0)]),
+                        [LineString([Point(1.0, 1.0), Point(0.0, 100.0)]),
+                        LineString([Point(0.0, 100.0), Point(200.0, 100.0)])]),
+                MultiPolygon([Polygon(LineString([Point(0.0, 0.0), Point(0.0, 100.0)]),
+                                      [LineString([Point(1.0, 1.0), Point(0.0, 100.0)]),
+                                      LineString([Point(0.0, 100.0), Point(200.0, 100.0)])]), 
+                              Polygon(LineString([Point(2.0, 0.0), Point(9.0, 20.0)]),
+                                      [LineString([Point(3.0, 1.0), Point(6.0, 10.0)]),
+                                      LineString([Point(5.0, 100.0), Point(200.0, 99.0)])])])
+                ]
+
