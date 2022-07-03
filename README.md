@@ -1,5 +1,7 @@
 # GeoJSONTables
 
+**Status**: *This package has become the new [GeoJSON.jl](https://github.com/JuliaGeo/GeoJSON.jl) as of v0.6, which adds [GeoInterface](https://github.com/JuliaGeo/GeoInterface.jl/) v1 support. Therefore this repository has been archived.*
+
 Read [GeoJSON](https://geojson.org/) [FeatureCollections](https://tools.ietf.org/html/rfc7946#section-3.3) using [JSON3.jl](https://github.com/quinnj/JSON3.jl), and provide the [Tables.jl](https://github.com/JuliaData/Tables.jl) interface.
 
 This package is unregistered and in development, so expect changes. It only supports reading, and only of FeatureCollections.
